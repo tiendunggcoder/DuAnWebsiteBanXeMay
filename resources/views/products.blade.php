@@ -188,15 +188,25 @@
         </div>
         <div class="filter-buttons" id="filter-buttons">
             <button class="filter-btn active" data-filter="all">Tất cả</button>
-            <button class="filter-btn" data-filter="Xe Tay Ga">Xe Tay Ga</button>
-            <button class="filter-btn" data-filter="Tay Ga Cao Cấp">Tay Ga Cao Cấp</button>
-            <button class="filter-btn" data-filter="Xe Thể Thao">Xe Thể Thao</button>
+            <button class="filter-btn" data-filter="Xe tay ga">Xe tay ga</button>
+            <button class="filter-btn" data-filter="Xe số">Xe số</button>
+            <button class="filter-btn" data-filter="Xe côn tay">Xe côn tay</button>
+            <button class="filter-btn" data-filter="Xe phân khối lớn">Xe phân khối lớn</button>
         </div>
     </div>
 
     <div class="search-container">
         <i class="fa-solid fa-magnifying-glass search-icon"></i>
         <input type="text" id="searchInput" class="search-input" placeholder="Nhập tên xe để tìm kiếm tức thì..." autocomplete="off">
+    </div>
+    <!-- Khung chọn sắp xếp giá bằng JS -->
+    <div class="sort-container my-3" style="margin: 15px 0; display: flex; align-items: center; gap: 8px;"> 
+        <label for="sortPriceSelect" style="font-weight: 600;">Sắp xếp theo giá:</label>
+        <select id="sortPriceSelect" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 6px; background-color: #fff;">
+          <option value="default">Mặc định</option>
+          <option value="asc">Giá: Thấp đến Cao</option>
+          <option value="desc">Giá: Cao xuống Thấp</option>
+        </select>
     </div>
 
     <div class="product-grid-v2" id="product-list">
@@ -274,6 +284,38 @@
 
         // Lắng nghe sự kiện gõ phím vào ô tìm kiếm
         searchInput.addEventListener('input', filterProducts);
+    // Xử lý sắp xếp theo giá tiền không reload trang
+        const sortSelect = document.getElementById('sortPriceSelect');
+        const productList = document.getElementById('product-list');
+
+        if (sortSelect && productList) {
+            const originalCards = Array.from(productList.children);
+
+            sortSelect.addEventListener('change', function () {
+                const order = this.value;
+
+                if (order === 'default') {
+                    originalCards.forEach(card => productList.appendChild(card));
+                    filterProducts();
+                    return;
+                }
+
+                const cards = Array.from(productList.children);
+
+                cards.sort((a, b) => {
+                    const priceElA = a.querySelector('.price-value');
+                    const priceElB = b.querySelector('.price-value');
+
+                    const priceA = priceElA ? parseFloat(priceElA.innerText.replace(/[^0-9]/g, '')) || 0 : 0;
+                    const priceB = priceElB ? parseFloat(priceElB.innerText.replace(/[^0-9]/g, '')) || 0 : 0;
+
+                    return order === 'asc' ? priceA - priceB : priceB - priceA;
+                });
+
+                cards.forEach(card => productList.appendChild(card));
+                filterProducts();
+            });
+        }
     });
 </script>
 @endsection
