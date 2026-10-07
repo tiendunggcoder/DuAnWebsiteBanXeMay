@@ -13,9 +13,12 @@ Website Quản lý Showroom Xe Máy Honda là mã nguồn dự án thuộc học
 
 ## 👥 Nhóm phát triển
 
-* **Nguyễn Văn Quân** - 20224113 (Nhóm trưởng)
-* **Bùi Bảo Khang** - 20224346
-* **Trần Anh Trung** - 20224343
+1. Đinh Tiến Dũng - 2024609769 ( Nhóm trưởng ) 
+2. Phạm Đăng Dũng - 2024609475
+3. Đỗ Văn Long - 2024603373
+4. Hà Quang Minh	- 2024605546
+5. Trần Đức Chung - 2024605772
+
 
 ---
 
@@ -98,5 +101,4 @@ Vui lòng thực hiện tuần tự các bước sau để cấu hình và vận
 
 ### 1. Tải mã nguồn về máy
 ```bash
-git clone [https://github.com/Hellena51204/Honda-Motorbike.git](https://github.com/Hellena51204/Honda-Motorbike.git)
-cd Honda-Motorbike
+git clone + file github
