@@ -224,9 +224,16 @@
                 <div class="colors">
                     <span>Màu sắc:</span>
                     @if($product->colors)
-                    @foreach($product->colors as $color)
-                    <div class="color-circle" @style(['background-color: ' . $color, 'border: 1px solid #ddd' => $color == '#ffffff'])></div>
-                    @endforeach
+                        @php
+                            // Giải mã dữ liệu màu nếu nó lưu dưới dạng chuỗi JSON
+                            $colorsList = is_string($product->colors) ? json_decode($product->colors, true) : $product->colors;
+                        @endphp
+
+                        @if(is_array($colorsList))
+                            @foreach($colorsList as $color)
+                            <div class="color-circle" @style(['background-color: ' . $color, 'border: 1px solid #ddd' => $color == '#ffffff'])></div>
+                            @endforeach
+                        @endif
                     @endif
                 </div>
                 <div class="price-action">

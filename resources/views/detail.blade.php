@@ -82,10 +82,16 @@
                 <h5 class="fw-bold">Màu sắc sẵn có:</h5>
                 <div class="d-flex gap-2 mt-2">
                     @if($product->colors)
-                        @foreach($product->colors as $color)
-                            <div class="rounded-circle border" style="width: 30px; height: 30px; background-color: {{ $color }}; cursor: pointer;" title="Màu xe"></div>
-                        @endforeach
-                    @endif
+    @php
+        $colorsList = is_string($product->colors) ? json_decode($product->colors, true) : $product->colors;
+    @endphp
+
+    @if(is_array($colorsList))
+        @foreach($colorsList as $color)
+        <div class="rounded-circle border" style="width: 30px; height: 30px; background-color: {{ $color }}; cursor: pointer"></div>
+        @endforeach
+    @endif
+@endif
                 </div>
             </div>
 
