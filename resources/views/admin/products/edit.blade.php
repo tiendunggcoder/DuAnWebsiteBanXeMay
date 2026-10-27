@@ -80,12 +80,29 @@
                         <input type="text" name="year" class="form-control" value="{{ old('year', $product->year) }}">
                     </div>
                     <div class="col-md-12">
-                        <label class="form-label fw-bold">Bảng màu (Mã Hex cách nhau dấu phẩy)</label>
-                        @php
-                            $colorStr = $product->colors ? implode(',', $product->colors) : '';
-                        @endphp
-                        <input type="text" name="colors" class="form-control" value="{{ old('colors', $colorStr) }}">
-                    </div>
+    <label class="form-label fw-bold">Bảng màu (Dữ liệu JSON / Màu sắc)</label>
+    @php
+        // Giải mã JSON thành mảng nếu nó là chuỗi, nếu là mảng rồi thì giữ nguyên
+        $colorsData = is_string($product->colors) ? json_decode($product->colors, true) : $product->colors;
+        
+        // Trích xuất tên màu hoặc mã hex để hiển thị dạng chuỗi an toàn
+        $colorStr = '';
+        if (is_array($colorsData)) {
+            $names = [];
+            foreach ($colorsData as $c) {
+                if (is_array($c)) {
+                    $names[] = $c['name'] ?? ($c['hex'] ?? '');
+                } else {
+                    $names[] = $c;
+                }
+            }
+            $colorStr = implode(', ', $names);
+        } else {
+            $colorStr = $product->colors;
+        }
+    @endphp
+    <input type="text" name="colors" class="form-control" value="{{ old('colors', $colorStr) }}">
+</div>
                     <div class="col-md-12">
                         <label class="form-label fw-bold">Mô tả sản phẩm</label>
                         <textarea name="description" class="form-control" rows="4" required>{{ old('description', $product->description) }}</textarea>
