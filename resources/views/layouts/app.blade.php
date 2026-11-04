@@ -279,87 +279,108 @@
             const chatCloseBtn = document.getElementById('chat-close-btn');
             const chatBody = document.getElementById('chat-body');
             const quickRepliesContainer = document.getElementById('quick-replies');
-
-            // Mở/Đóng Chatbox
+            
+            // Mở/Đóng Khung Chat
             chatToggleBtn.addEventListener('click', () => chatWindow.classList.toggle('d-none'));
             chatCloseBtn.addEventListener('click', () => chatWindow.classList.add('d-none'));
-
-            // BỘ DỮ LIỆU CÂU HỎI - TRẢ LỜI TỰ ĐỘNG
-            const botData = {
-                "Giá xe Vision?": "Hiện tại Honda Vision 2024 có giá khởi điểm từ 29.900.000 VNĐ (tùy phiên bản). Bạn muốn xem chi tiết ở mục Sản phẩm không?",
-                "Thủ tục trả góp?": "Trả góp chỉ cần CCCD gắn chip. Trả trước từ 20-30% giá trị xe, lãi suất 0% cho thẻ tín dụng. Vui lòng để lại số điện thoại để nhân viên gọi tư vấn nhé!",
-                "Đăng ký lái thử?": "Tuyệt vời! Bạn có thể mang theo Bằng lái xe (A1/A2) đến Showroom tại 123 Honda Street, Quận 1 để trải nghiệm thực tế mọi dòng xe."
-            };
+            
+            // CÁC CÂU HỎI GỢI Ý NHANH
+            const quickQuestions = [
+                "Giá xe Vision?", 
+                "Giá xe Wave RSX thế nào?", 
+                "Thủ tục trả góp?", 
+                "Đăng ký lái thử?"
+            ];
 
             // Hiển thị các nút câu hỏi gợi ý
-            Object.keys(botData).forEach(question => {
+            quickQuestions.forEach(question => {
                 let btn = document.createElement('button');
                 btn.className = "btn btn-sm btn-outline-secondary rounded-pill bg-light text-dark border-0";
                 btn.innerText = question;
                 btn.onclick = function() {
-                    appendMessage(question, 'user');
-                    setTimeout(() => appendMessage(botData[question], 'bot'), 600); // Giả vờ bot đang gõ chữ 0.6 giây
+                    sendQueryToAI(question);
                 };
                 quickRepliesContainer.appendChild(btn);
             });
 
-            // Hàm in tin nhắn ra màn hình
-            function appendMessage(text, sender) {
-                let msgDiv = document.createElement('div');
-                msgDiv.className = `d-flex mb-3 ${sender === 'user' ? 'justify-content-end' : ''}`;
+            // Hàm in tin nhắn ra khung chat giao diện
+            // Hàm in tin nhắn ra khung chat giao diện
+    function appendMessage(text, sender) {
+    let msgDiv = document.createElement('div');
+    msgDiv.className = `d-flex mb-3 ${sender === 'user' ? 'justify-content-end' : ''}`;
+    let bubble = document.createElement('div');
+    bubble.className = `p-2 rounded-3 shadow-sm ${sender === 'user' ? 'text-white' : 'bg-white text-dark'}`;
+    bubble.style.maxWidth = '80%';
+    if (sender === 'user') {
+        bubble.style.backgroundColor = '#cc0000';
+        bubble.innerText = text; // Người dùng thì hiển thị chữ thường
+    } else {
+        // Bot thì chuyển đổi định dạng **chữ** thành thẻ <b> của HTML để in đậm đẹp mắt
+        let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+        bubble.innerHTML = formattedText; 
+    }
+    msgDiv.appendChild(bubble);
+    chatBody.appendChild(msgDiv);
+    chatBody.scrollTop = chatBody.scrollHeight;
+}
 
-                let bubble = document.createElement('div');
-                bubble.className = `p-2 rounded-3 shadow-sm ${sender === 'user' ? 'text-white' : 'bg-white text-dark'}`;
-                bubble.style.maxWidth = '80%';
-                if (sender === 'user') bubble.style.backgroundColor = '#cc0000';
-
-                bubble.innerText = text;
-                msgDiv.appendChild(bubble);
-                chatBody.appendChild(msgDiv);
-                chatBody.scrollTop = chatBody.scrollHeight; // Tự động cuộn xuống tin nhắn mới nhất
-            }
             const chatInput = document.getElementById('chat-input');
             const chatSendBtn = document.getElementById('chat-send-btn');
 
-            // Hàm xử lý khi người dùng tự nhập tin nhắn
-            async function handleUserSendMessage() {
-                const text = chatInput.value.trim();
-                if (!text) return; // Không làm gì nếu ô chat trống
+            // HÀM GỬI CÂU HỎI ĐẾN BACKEND LARAVEL (RAG AI)
+            async function sendQueryToAI(text) {
+                const messageText = text || chatInput.value.trim();
+                if (!messageText) return;
 
-                // 1. Hiển thị tin nhắn lên màn hình của khách ngay lập tức
-                appendMessage(text, 'user');
-                chatInput.value = ''; // Xóa trắng ô nhập
+                // 1. Hiển thị tin nhắn của người dùng lên khung chat ngay lập tức
+                appendMessage(messageText, 'user');
+                if (!text) chatInput.value = ''; // Xóa trắng ô input nếu nhập thủ công
 
-                // 2. Gửi tin nhắn ngầm (AJAX) lên Server để lưu vào Database
+                // Hiển thị trạng thái đang tra cứu...
+                let typingId = 'typing-' + Date.now();
+                let typingDiv = document.createElement('div');
+                typingDiv.id = typingId;
+                typingDiv.className = 'd-flex mb-3';
+                typingDiv.innerHTML = `<div class="bg-white p-2 rounded-3 shadow-sm text-muted fst-italic" style="max-width: 80%;">Trợ lý ảo đang tra cứu cơ sở dữ liệu xe...</div>`;
+                chatBody.appendChild(typingDiv);
+                chatBody.scrollTop = chatBody.scrollHeight;
+
+                // 2. Gửi yêu cầu qua AJAX đến Route /chatbot/chat
                 try {
-                    const response = await fetch('/chat/send', {
+                    const response = await fetch("{{ route('chatbot.chat') }}", {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                         },
-                        body: JSON.stringify({
-                            message: text
-                        })
+                        body: JSON.stringify({ message: messageText })
                     });
-                    const result = await response.json();
 
-                    // Nếu có câu trả lời tự động từ Server thì hiện ra
+                    const result = await response.json();
+                    
+                    // Xóa dòng trạng thái đang soạn
+                    document.getElementById(typingId).remove();
+
+                    // 3. Hiển thị câu trả lời thông minh từ AI (dựa trên CSDL thực tế)
                     if (result.reply) {
-                        setTimeout(() => appendMessage(result.reply, 'bot'), 500);
+                        appendMessage(result.reply, 'bot');
+                    } else {
+                        appendMessage("Xin lỗi, hệ thống chưa nhận được phản hồi phù hợp.", 'bot');
                     }
                 } catch (error) {
-                    console.error("Lỗi khi gửi tin nhắn", error);
+                    if (document.getElementById(typingId)) document.getElementById(typingId).remove();
+                    console.error("Lỗi kết nối AI:", error);
+                    appendMessage("Đã xảy ra lỗi kết nối với máy chủ AI.", 'bot');
                 }
             }
 
             // Lắng nghe sự kiện click nút Gửi
-            chatSendBtn.addEventListener('click', handleUserSendMessage);
-
+            chatSendBtn.addEventListener('click', () => sendQueryToAI());
+            
             // Lắng nghe sự kiện bấm phím Enter
             chatInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
-                    handleUserSendMessage();
+                    sendQueryToAI();
                 }
             });
         });
