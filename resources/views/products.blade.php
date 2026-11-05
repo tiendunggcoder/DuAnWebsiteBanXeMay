@@ -195,10 +195,134 @@
         </div>
     </div>
 
-    <div class="search-container">
+    <div class="search-container" style="position: relative;">
         <i class="fa-solid fa-magnifying-glass search-icon"></i>
-        <input type="text" id="searchInput" class="search-input" placeholder="Nhập tên xe để tìm kiếm tức thì..." autocomplete="off">
+        <input type="text" id="searchInput" class="search-input" style="padding-right: 210px;" placeholder="Nhập tên xe để tìm kiếm tức thì..." autocomplete="off">
+        
+        <!-- Nút Tìm kiếm bằng hình ảnh nằm ngay bên phải ô tìm kiếm -->
+        <button type="button" class="btn btn-danger rounded-pill px-3 py-1 shadow-sm d-inline-flex align-items-center gap-2" 
+                style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background-color: #cc0000; font-size: 0.9rem; z-index: 5;" 
+                data-bs-toggle="modal" data-bs-target="#imageSearchModal">
+            <i class="fa-solid fa-camera"></i> Tìm bằng hình ảnh
+        </button>
     </div>
+
+    <!-- Modal Tìm kiếm bằng hình ảnh AI -->
+    <div class="modal fade" id="imageSearchModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header text-white" style="background-color: #cc0000;">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa-solid fa-camera-retro me-2"></i>Tìm kiếm xe máy bằng hình ảnh (YOLOv26)
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="text-center mb-3">
+                        <label class="form-label fw-bold text-secondary">Tải lên hình ảnh mẫu xe bạn muốn tìm:</label>
+                        <input type="file" id="ai-image-input" accept="image/*" class="form-control mb-3">
+                        <img id="ai-image-preview" src="" class="img-fluid rounded-3 shadow-sm d-none mx-auto" style="max-height: 220px;">
+                    </div>
+                    <div class="d-grid">
+                        <button type="button" id="ai-search-btn" class="btn text-white fw-bold py-2 rounded-pill" style="background-color: #cc0000;">
+                            <i class="fa-solid fa-magnifying-glass me-1"></i> Phân tích hình ảnh & Tra cứu xe
+                        </button>
+                    </div>
+                    <!-- Khu vực hiển thị kết quả -->
+                    <div id="ai-search-result" class="mt-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const imgInput = document.getElementById('ai-image-input');
+        const imgPreview = document.getElementById('ai-image-preview');
+        const searchBtn = document.getElementById('ai-search-btn');
+        const resultBox = document.getElementById('ai-search-result');
+
+        // Hiển thị ảnh xem trước khi chọn file
+        imgInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                imgPreview.src = URL.createObjectURL(file);
+                imgPreview.classList.remove('d-none');
+                resultBox.innerHTML = '';
+            }
+        });
+
+        // Gửi ảnh lên Backend Laravel -> gọi sang FastAPI cổng 8001
+        searchBtn.addEventListener('click', async function() {
+            const file = imgInput.files[0];
+            if (!file) {
+                alert("Vui lòng chọn một bức ảnh xe máy trước khi tìm kiếm!");
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append('image', file);
+
+            resultBox.innerHTML = `<div class="text-center text-muted py-3"><i class="fa-solid fa-spinner fa-spin me-2"></i>Hệ thống AI đang nhận diện mẫu xe và đối chiếu CSDL...</div>`;
+
+            try {
+                const response = await fetch("{{ route('products.searchByImage') }}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    resultBox.innerHTML = `<div class="alert alert-warning mb-0">${data.message}</div>`;
+                    return;
+                }
+
+                let html = `
+                    <div class="alert alert-success d-flex justify-content-between align-items-center">
+                        <span><strong>Mẫu xe nhận diện:</strong> Honda ${data.detected_class}</span>
+                        <span class="badge bg-success">Độ tin cậy: ${data.confidence}%</span>
+                    </div>
+                `;
+
+                if (data.products && data.products.length > 0) {
+                    html += `<div class="row g-3">`;
+                    data.products.forEach(p => {
+                        let price = new Intl.NumberFormat('vi-VN').format(p.price) + ' VNĐ';
+                        let stockBadge = p.stock > 0 
+                            ? `<span class="badge bg-primary">Còn ${p.stock} chiếc</span>` 
+                            : `<span class="badge bg-secondary">Tạm hết hàng</span>`;
+                        
+                        html += `
+                            <div class="col-md-6">
+                                <div class="card h-100 shadow-sm border-0 bg-light">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold text-dark mb-1">${p.name}</h6>
+                                        <p class="text-danger fw-bold mb-2">${price}</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            ${stockBadge}
+                                            <a href="/products/${p.id}" class="btn btn-sm btn-danger rounded-pill px-3" style="background-color: #cc0000;">Xem chi tiết</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += `</div>`;
+                } else {
+                    html += `<div class="alert alert-info mb-0">Đã nhận diện dòng xe <b>${data.detected_class}</b> nhưng hiện chưa có sản phẩm khớp trong CSDL.</div>`;
+                }
+
+                resultBox.innerHTML = html;
+            } catch (err) {
+                resultBox.innerHTML = `<div class="alert alert-danger mb-0">Lỗi kết nối tới máy chủ xử lý ảnh.</div>`;
+            }
+        });
+    });
+    </script>
     <!-- Khung chọn sắp xếp giá bằng JS -->
     <div class="sort-container my-3" style="margin: 15px 0; display: flex; align-items: center; gap: 8px;"> 
         <label for="sortPriceSelect" style="font-weight: 600;">Sắp xếp theo giá:</label>

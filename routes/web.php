@@ -81,3 +81,5 @@ Route::get('/blog', [App\Http\Controllers\BlogController::class, 'index'])->name
 Route::get('/blog/{id}', [App\Http\Controllers\BlogController::class, 'show'])->name('blog.show');
 use App\Http\Controllers\ChatbotController;
 Route::post('/chatbot/chat', [ChatbotController::class, 'chat'])->name('chatbot.chat');
+use App\Http\Controllers\ImageSearchController;
+Route::post('/search-by-image', [ImageSearchController::class, 'searchByImage'])->name('products.searchByImage');
