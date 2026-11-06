@@ -83,3 +83,5 @@ use App\Http\Controllers\ChatbotController;
 Route::post('/chatbot/chat', [ChatbotController::class, 'chat'])->name('chatbot.chat');
 use App\Http\Controllers\ImageSearchController;
 Route::post('/search-by-image', [ImageSearchController::class, 'searchByImage'])->name('products.searchByImage');
+use App\Http\Controllers\StoreLocatorController;
+Route::post('/stores/nearest', [StoreLocatorController::class, 'findNearestStores'])->name('stores.nearest');

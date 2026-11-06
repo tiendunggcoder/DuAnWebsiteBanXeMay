@@ -213,7 +213,7 @@
             <div class="modal-content border-0 shadow-lg rounded-4">
                 <div class="modal-header text-white" style="background-color: #cc0000;">
                     <h5 class="modal-title fw-bold">
-                        <i class="fa-solid fa-camera-retro me-2"></i>Tìm kiếm xe máy bằng hình ảnh (YOLOv26)
+                        <i class="fa-solid fa-camera-retro me-2"></i>Tìm kiếm xe máy bằng hình ảnh (AI Vision)
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -263,7 +263,7 @@
             let formData = new FormData();
             formData.append('image', file);
 
-            resultBox.innerHTML = `<div class="text-center text-muted py-3"><i class="fa-solid fa-spinner fa-spin me-2"></i>Hệ thống AI đang nhận diện mẫu xe và đối chiếu CSDL...</div>`;
+            resultBox.innerHTML = `<div class="text-center text-muted py-3"><i class="fa-solid fa-spinner fa-spin me-2"></i>AI đang phân tích hình ảnh bằng Gemini Vision, vui lòng chờ...</div>`;
 
             try {
                 const response = await fetch("{{ route('products.searchByImage') }}", {

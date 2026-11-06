@@ -21,22 +21,36 @@ class ImageSearchController extends Controller
 
         try {
             // Gửi ảnh qua HTTP POST tới dịch vụ Python FastAPI (cổng 8001)
-            $response = Http::timeout(20)->attach(
-                'file',
-                file_get_contents($file->getRealPath()),
-                $file->getClientOriginalName()
-            )->post('http://127.0.0.1:8001/predict');
+            // Truyền Gemini API Key qua header để Python service dùng Gemini Vision
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'X-Gemini-Api-Key' => env('GEMINI_API_KEY', ''),
+                ])
+                ->attach(
+                    'file',
+                    file_get_contents($file->getRealPath()),
+                    $file->getClientOriginalName()
+                )
+                ->post('http://127.0.0.1:8001/predict');
 
             if (!$response->successful()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Dịch vụ AI phản hồi lỗi từ cổng 8001.'
+                    'message' => 'Dịch vụ AI phản hồi lỗi. Vui lòng thử lại.'
                 ], 200);
             }
 
             $aiResult = $response->json();
             $detectedClass = $aiResult['detected_class'] ?? '';
             $confidence = $aiResult['confidence'] ?? 0;
+
+            // Nếu Python service đã trả về success=false với message rõ ràng
+            if (isset($aiResult['success']) && $aiResult['success'] === false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $aiResult['message'] ?? 'Không nhận diện được xe máy trong ảnh.'
+                ], 200);
+            }
 
             if ($confidence < 0.65 || empty($detectedClass)) {
                 return response()->json([
